@@ -15,5 +15,9 @@ export default function Home() {
     test();
   }, []);
 
-  return <div>뿌엥 재판소</div>;
+  return (
+    <div className="flex flex-col items-center  min-h-screen py-2">
+      <div className="text-4xl font-bold">뿌엥 로그</div>
+    </div>
+  );
 }
