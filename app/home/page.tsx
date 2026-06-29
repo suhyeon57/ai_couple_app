@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function HomePage() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function HomePage() {
   const [userCode, setUserCode] = useState("");
   const [isMatched, setIsMatched] = useState(false);
   const [coupleData, setCoupleData] = useState<any | null>(null);
+  const [userNickname, setUserNickname] = useState("");
+  const [partnerNickname, setPartnerNickname] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -45,6 +48,7 @@ export default function HomePage() {
           if (!coupleErr && couple) {
             setIsMatched(true);
             setCoupleData(couple);
+            console.log("coupleData:", couple);
           } else {
             console.error(coupleErr);
           }
@@ -57,16 +61,92 @@ export default function HomePage() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const fetchNicknames = async () => {
+      if (!coupleData) return; // coupleData가 준비된 후에 실행
+
+      try {
+        // 현재 로그인 유저 아이디 가져오기
+        const { data: authData, error: authErr } =
+          await supabase.auth.getUser();
+        if (authErr) {
+          console.error(authErr);
+          return;
+        }
+        const currentUser = authData.user;
+        if (!currentUser) return;
+
+        // 내 닉네임 조회
+        const { data: me, error: meErr } = await supabase
+          .from("users")
+          .select("id,nickname")
+          .eq("id", currentUser.id)
+          .single();
+        if (meErr) {
+          console.error(meErr);
+          return;
+        }
+
+        // coupleData에서 상대 id 결정
+        const partnerId =
+          coupleData.user1_id === me.id
+            ? coupleData.user2_id
+            : coupleData.user1_id;
+
+        // 상대 닉네임 조회
+        const { data: partner, error: partnerErr } = await supabase
+          .from("users")
+          .select("id,nickname")
+          .eq("id", partnerId)
+          .single();
+        if (partnerErr) {
+          console.error(partnerErr);
+          return;
+        }
+
+        setUserNickname(me.nickname);
+        setPartnerNickname(partner.nickname);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchNicknames();
+  }, [coupleData]);
+
   return (
     <>
       {isMatched ? (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
-          <h1 className="text-3xl font-bold">커플 매칭 완료!</h1>
-          <div className="border p-2 w-80 rounded">
-            <p>커플 코드: {userCode}</p>
-            <p>커플 ID: {coupleData?.id}</p>
-            <p>커플 이름: {coupleData?.name}</p>
+        <div className="text-2xl flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+          <h1 className="text-3xl font-bold">뿌엥 로그</h1>
+          <div className="text-center p-2 w-80">
+            <p>
+              {userNickname} ❤️ {partnerNickname}
+            </p>
+            <p>Since {coupleData?.start_date}</p>
+            <p>
+              D+
+              {coupleData?.start_date
+                ? Math.floor(
+                    (new Date().getTime() -
+                      new Date(coupleData.start_date).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : 0}
+            </p>
           </div>
+          <Image
+            src="/logo.png"
+            alt="뿌엥"
+            width={120}
+            height={120}
+            priority
+            className="rounded-full hover:scale-105 transition-transform duration-300"
+          />
+          <p>뿌엥이 대기중</p>
+          <button className="bg-[#F79F9F] text-white p-2 rounded w-80">
+            싸울 준비 완료 🚨
+          </button>
         </div>
       ) : (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">

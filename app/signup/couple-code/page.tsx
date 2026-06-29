@@ -9,6 +9,7 @@ export default function CoupleCodePage() {
 
   const [myCode, setMyCode] = useState("");
   const [coupleCode, setCoupleCode] = useState("");
+  const [startDate, setStartDate] = useState("");
 
   useEffect(() => {
     const fetchMyCode = async () => {
@@ -76,7 +77,7 @@ export default function CoupleCodePage() {
         .insert({
           user1_id: user.id,
           user2_id: partnerData.id,
-          start_date: new Date().toISOString().split("T")[0],
+          start_date: startDate,
         })
         .select()
         .single();
@@ -123,6 +124,16 @@ export default function CoupleCodePage() {
         placeholder="Couple Code"
         value={coupleCode}
         onChange={(e) => setCoupleCode(e.target.value)}
+      />
+
+      <div className="items-start w-80">
+        <h1 className="text-lg font-bold">Since</h1>
+      </div>
+      <input
+        type="date"
+        className="border p-2 w-80 rounded"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
       />
 
       <button
