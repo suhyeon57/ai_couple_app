@@ -52,7 +52,7 @@ export default function SignupPage() {
 
       alert("회원가입 완료!");
 
-      router.push("/signup/couple-code");
+      router.push("/home");
     } catch (err) {
       console.error(err);
       alert("오류 발생");

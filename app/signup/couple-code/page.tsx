@@ -66,6 +66,11 @@ export default function CoupleCodePage() {
         return;
       }
 
+      if (partnerData.couple_id) {
+        alert("이미 커플이 등록된 사용자입니다.");
+        return;
+      }
+
       const { data: coupleData, error: coupleError } = await supabase
         .from("couples")
         .insert({
@@ -121,7 +126,7 @@ export default function CoupleCodePage() {
       />
 
       <button
-        className="bg-blue-500 text-white p-2 rounded w-80"
+        className="bg-[#F79F9F] text-white p-2 rounded w-80"
         onClick={handleJoin}
       >
         Join

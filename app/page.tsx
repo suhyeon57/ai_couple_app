@@ -39,10 +39,20 @@ export default function Home() {
       </div>
 
       <div className="flex flex-low gap-4 items-center">
-        <button className="px-4 py-2 bg-[#F79F9F] text-white rounded hover:bg-blue-600 transition-colors duration-300">
+        <button
+          className="px-4 py-2 bg-[#F79F9F] text-white rounded hover:bg-blue-600 transition-colors duration-300"
+          onClick={() => {
+            window.location.href = "/login";
+          }}
+        >
           Login
         </button>
-        <button className="px-4 py-2 bg-[#F79F9F] text-white rounded hover:bg-blue-600 transition-colors duration-300">
+        <button
+          className="px-4 py-2 bg-[#F79F9F] text-white rounded hover:bg-blue-600 transition-colors duration-300"
+          onClick={() => {
+            window.location.href = "/signup";
+          }}
+        >
           Sign up
         </button>
       </div>
