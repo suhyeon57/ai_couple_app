@@ -117,7 +117,7 @@ export default function HomePage() {
   return (
     <>
       {isMatched ? (
-        <div className="text-2xl flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+        <div className="text-2xl flex min-h-screen flex-col items-center justify-center gap-10 p-4">
           <h1 className="text-3xl font-bold">뿌엥 로그</h1>
           <div className="text-center p-2 w-80">
             <p>
@@ -147,6 +147,15 @@ export default function HomePage() {
           <button className="bg-[#F79F9F] text-white p-2 rounded w-80">
             싸울 준비 완료 🚨
           </button>
+          <div className="flex flex-row gap-8">
+            <button className="bg-[#F79F9F] text-white p-2 rounded w-40">
+              싸움 기록
+            </button>
+            <button className="bg-[#F79F9F] text-white p-2 rounded w-40">
+              화해 기록
+            </button>
+          </div>
+          <p>오늘의 커플 온도 </p>
         </div>
       ) : (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">

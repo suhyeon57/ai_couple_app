@@ -98,7 +98,7 @@ export default function CoupleCodePage() {
         .eq("id", partnerData.id);
 
       alert("커플 코드가 성공적으로 등록되었습니다!");
-      router.push("/"); // 필요하면 "/signup/couple-code"에서 이동할 경로로 변경
+      router.push("/home"); // 필요하면 "/signup/couple-code"에서 이동할 경로로 변경
     } catch (err) {
       console.error(err);
       alert("오류 발생");
