@@ -5,6 +5,7 @@ import { supabase } from "../../src/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import CourtRequestModal from "../components/CourtRequestModal";
+import IncomingCourtCard from "../components/IncomingCourtCard";
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function HomePage() {
   const [userNickname, setUserNickname] = useState("");
   const [partnerNickname, setPartnerNickname] = useState("");
   const [open, setOpen] = useState(false);
+  const [incomingCase, setIncomingCase] = useState<any>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -117,9 +119,15 @@ export default function HomePage() {
   }, [coupleData]);
 
   const handleCourtRequest = async (reason: string) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
     await supabase.from("cases").insert({
       couple_id: coupleData.id,
-      created_by: coupleData.user1_id,
+      created_by: user.id,
       reason,
       status: "pending",
     });
@@ -127,8 +135,50 @@ export default function HomePage() {
     setOpen(false);
   };
 
+  useEffect(() => {
+    const fetchIncomingCase = async () => {
+      if (!coupleData) return;
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      try {
+        const { data: caseData, error } = await supabase
+          .from("cases")
+          .select("*")
+          .eq("couple_id", coupleData.id)
+          .eq("status", "pending")
+          .neq("created_by", user.id)
+          .single();
+
+        if (error && error.code !== "PGRST116") {
+          console.error(error);
+          return;
+        }
+
+        if (caseData) {
+          setIncomingCase(caseData);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchIncomingCase();
+  }, [coupleData]);
+
   return (
     <>
+      {incomingCase && (
+        <IncomingCourtCard
+          reason={incomingCase.reason}
+          onAccept={() => {}}
+          onReject={() => {}}
+        />
+      )}
       {isMatched ? (
         <div className="text-2xl flex min-h-screen flex-col items-center justify-center gap-10 p-4">
           <h1 className="text-3xl font-bold">뿌엥 로그</h1>
@@ -168,6 +218,7 @@ export default function HomePage() {
             onClose={() => setOpen(false)}
             onSubmit={handleCourtRequest}
           />
+
           <div className="flex flex-row gap-8">
             <button className="bg-[#F79F9F] text-white p-2 rounded w-40">
               싸움 기록
