@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import CourtRequestModal from "../components/CourtRequestModal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function HomePage() {
   const [coupleData, setCoupleData] = useState<any | null>(null);
   const [userNickname, setUserNickname] = useState("");
   const [partnerNickname, setPartnerNickname] = useState("");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -114,6 +116,17 @@ export default function HomePage() {
     fetchNicknames();
   }, [coupleData]);
 
+  const handleCourtRequest = async (reason: string) => {
+    await supabase.from("cases").insert({
+      couple_id: coupleData.id,
+      created_by: coupleData.user1_id,
+      reason,
+      status: "pending",
+    });
+
+    setOpen(false);
+  };
+
   return (
     <>
       {isMatched ? (
@@ -144,9 +157,17 @@ export default function HomePage() {
             className="rounded-full hover:scale-105 transition-transform duration-300"
           />
           <p>뿌엥이 대기중</p>
-          <button className="bg-[#F79F9F] text-white p-2 rounded w-80">
+          <button
+            className="bg-[#F79F9F] text-white p-2 rounded w-80"
+            onClick={() => setOpen(true)}
+          >
             싸울 준비 완료 🚨
           </button>
+          <CourtRequestModal
+            open={open}
+            onClose={() => setOpen(false)}
+            onSubmit={handleCourtRequest}
+          />
           <div className="flex flex-row gap-8">
             <button className="bg-[#F79F9F] text-white p-2 rounded w-40">
               싸움 기록
