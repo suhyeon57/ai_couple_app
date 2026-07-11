@@ -152,7 +152,7 @@ export default function HomePage() {
           .eq("couple_id", coupleData.id)
           .eq("status", "pending")
           .neq("created_by", user.id)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== "PGRST116") {
           console.error(error);
