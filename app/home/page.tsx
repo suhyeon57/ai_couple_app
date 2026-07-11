@@ -170,18 +170,38 @@ export default function HomePage() {
     fetchIncomingCase();
   }, [coupleData]);
 
+  const handleAccept = async () => {
+    if (!incomingCase) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    await supabase
+      .from("cases")
+      .update({ status: "accepted" })
+      .eq("id", incomingCase.id);
+
+    setIncomingCase(null);
+
+    router.push(`/chat/${incomingCase.id}`);
+    console.log(incomingCase.id);
+  };
+
   return (
     <>
-      {incomingCase && (
-        <IncomingCourtCard
-          reason={incomingCase.reason}
-          onAccept={() => {}}
-          onReject={() => {}}
-        />
-      )}
       {isMatched ? (
         <div className="text-2xl flex min-h-screen flex-col items-center justify-center gap-10 p-4">
           <h1 className="text-3xl font-bold">뿌엥 로그</h1>
+          {incomingCase && (
+            <IncomingCourtCard
+              reason={incomingCase.reason}
+              onAccept={handleAccept}
+              onReject={() => {}}
+            />
+          )}
           <div className="text-center p-2 w-80">
             <p>
               {userNickname} ❤️ {partnerNickname}
@@ -198,6 +218,7 @@ export default function HomePage() {
                 : 0}
             </p>
           </div>
+
           <Image
             src="/logo.png"
             alt="뿌엥"
