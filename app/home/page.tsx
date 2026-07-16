@@ -17,6 +17,7 @@ export default function HomePage() {
   const [partnerNickname, setPartnerNickname] = useState("");
   const [open, setOpen] = useState(false);
   const [incomingCase, setIncomingCase] = useState<any>(null);
+  const [waitingCase, setWaitingCase] = useState<any>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -119,19 +120,41 @@ export default function HomePage() {
   }, [coupleData]);
 
   const handleCourtRequest = async (reason: string) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    if (authErr) {
+      console.error(authErr);
+      return;
+    }
+    const currentUser = authData.user;
+    if (!currentUser) return;
 
-    if (!user) return;
+    // 내 닉네임 조회
+    const { data: me, error: meErr } = await supabase
+      .from("users")
+      .select("id,nickname")
+      .eq("id", currentUser.id)
+      .single();
+    if (meErr) {
+      console.error(meErr);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("cases")
+      .insert({
+        couple_id: coupleData.id,
+        created_by: me.id,
+        reason,
+        status: "pending",
+      })
+      .select()
+      .single();
 
-    await supabase.from("cases").insert({
-      couple_id: coupleData.id,
-      created_by: user.id,
-      reason,
-      status: "pending",
-    });
+    if (error) {
+      console.error(error);
+      return;
+    }
 
+    setWaitingCase(data);
     setOpen(false);
   };
 
@@ -190,6 +213,39 @@ export default function HomePage() {
     console.log(incomingCase.id);
   };
 
+  useEffect(() => {
+    if (!waitingCase) return;
+
+    const channel = supabase
+      .channel(`case-${waitingCase.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "cases",
+          filter: `id=eq.${waitingCase.id}`,
+        },
+        (payload) => {
+          console.log(payload.new);
+
+          if (payload.new.status === "accepted") {
+            router.push(`/chat/${waitingCase.id}`);
+          }
+
+          if (payload.new.status === "rejected") {
+            alert("상대방이 재판을 거절했습니다.");
+            setWaitingCase(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [waitingCase, router]);
+
   return (
     <>
       {isMatched ? (
@@ -201,6 +257,14 @@ export default function HomePage() {
               onAccept={handleAccept}
               onReject={() => {}}
             />
+          )}
+          {waitingCase && (
+            <div className="rounded-xl bg-white p-5 shadow">
+              <p className="font-bold">재판 신청 완료</p>
+              <p className="text-gray-500 mt-2">
+                상대방이 수락하면 자동으로 채팅방에 입장합니다.
+              </p>
+            </div>
           )}
           <div className="text-center p-2 w-80">
             <p>

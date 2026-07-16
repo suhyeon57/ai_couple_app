@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 type Message = {
   id: number;
@@ -53,16 +54,29 @@ export default function ChatRoom() {
   };
 
   return (
-    <div className="text-xl flex min-h-screen flex-col items-center justify-center gap-10 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4 ">
       <h1 className="text-3xl font-bold">뿌엥 로그</h1>
       {/* Chat */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => {
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full">
+        {messages.map((message, idx) => {
+          // 이전 메시지 확인
+          const prev = messages[idx - 1];
+          const showJudgeAvatar =
+            message.sender === "judge" && (!prev || prev.sender !== "judge");
+
           if (message.sender === "judge") {
             return (
-              <div key={message.id} className="flex flex-col items-center">
-                <div className="text-sm text-gray-500 mb-1">⚖️ 뿌엥이</div>
-
+              <div key={message.id} className="flex flex-col items-start">
+                {showJudgeAvatar && (
+                  <Image
+                    src="/logo.png"
+                    alt="뿌엥"
+                    width={45}
+                    height={45}
+                    priority
+                    className="rounded-full hover:scale-105 transition-transform duration-300"
+                  />
+                )}
                 <div className="bg-white rounded-2xl px-4 py-3 shadow max-w-xs whitespace-pre-line">
                   {message.text}
                 </div>
@@ -105,7 +119,7 @@ export default function ChatRoom() {
       </div>
 
       {/* Input */}
-      <div className=" border-t p-3 flex gap-2">
+      <div className=" border-t p-3 flex gap-2 w-full">
         <input
           className="flex-1 border rounded-full px-4 py-2 outline-none"
           placeholder="메시지를 입력하세요..."
@@ -115,9 +129,9 @@ export default function ChatRoom() {
 
         <button
           onClick={handleSend}
-          className="bg-pink-400 text-white px-5 rounded-full"
+          className="bg-pink-300 text-white px-3 rounded-full"
         >
-          전송
+          ⬆
         </button>
       </div>
     </div>
