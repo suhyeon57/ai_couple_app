@@ -1,54 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { supabase } from "@/src/lib/supabase";
 
 type Message = {
-  id: number;
-  sender: "judge" | "me" | "partner";
-  text: string;
-  time: string;
+  id: string;
+  case_id: string;
+  user_id: string;
+  role: string;
+  content: string;
+  created_at: string;
 };
 
-export default function ChatRoom() {
+type Props = {
+  caseId: string;
+};
+
+export default function ChatRoom({ caseId }: Props) {
   const [input, setInput] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: "judge",
-      text: "안녕하세요.",
-      time: "22:31",
-    },
-    {
-      id: 2,
-      sender: "judge",
-      text: "지금부터 재판을 시작하겠습니다.",
-      time: "22:31",
-    },
-    {
-      id: 3,
-      sender: "judge",
-      text: "원고부터 진술해주세요.",
-      time: "22:31",
-    },
-  ]);
+  console.log("caseId", caseId);
 
-  const handleSend = () => {
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+      const { data, error } = await supabase
+        .from("statements")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("created_at");
+
+      console.log("data", data);
+      console.log("error", error);
+
+      if (data) {
+        setMessages(data);
+      }
+    };
+
+    fetchMessages();
+  }, [caseId]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`statements-${caseId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "statements",
+          filter: `case_id=eq.${caseId}`,
+        },
+        (payload) => {
+          console.log("New message received:", payload.new);
+
+          setMessages((prev) => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime Status :", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [caseId]);
+  useEffect(() => {
+    console.log("messages", messages);
+  }, [messages]);
+
+  const handleSend = async () => {
+    console.log("Sending message:", input);
     if (!input.trim()) return;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        sender: "me",
-        text: input,
-        time: new Date().toLocaleTimeString("ko-KR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-    ]);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { error } = await supabase.from("statements").insert({
+      case_id: caseId,
+      user_id: user.id,
+      role: "plaintiff",
+      content: input,
+    });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     setInput("");
   };
@@ -59,12 +110,12 @@ export default function ChatRoom() {
       {/* Chat */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full">
         {messages.map((message, idx) => {
-          // 이전 메시지 확인
           const prev = messages[idx - 1];
-          const showJudgeAvatar =
-            message.sender === "judge" && (!prev || prev.sender !== "judge");
+          const isMe = message.user_id === currentUserId;
+          const isJudge = message.role === "judge";
+          const showJudgeAvatar = !prev || prev.role !== "judge";
 
-          if (message.sender === "judge") {
+          if (isJudge) {
             return (
               <div key={message.id} className="flex flex-col items-start">
                 {showJudgeAvatar && (
@@ -78,24 +129,27 @@ export default function ChatRoom() {
                   />
                 )}
                 <div className="bg-white rounded-2xl px-4 py-3 shadow max-w-xs whitespace-pre-line">
-                  {message.text}
+                  {message.content}
                 </div>
               </div>
             );
           }
 
-          if (message.sender === "partner") {
+          if (!isMe) {
             return (
               <div key={message.id} className="flex justify-start">
                 <div>
                   <div className="text-sm mb-1">😊 상대방</div>
 
                   <div className="bg-white rounded-2xl px-4 py-3 shadow inline-block max-w-xs">
-                    {message.text}
+                    {message.content}
                   </div>
 
                   <div className="text-xs text-gray-500 mt-1">
-                    {message.time}
+                    {new Date(message.created_at).toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
                 </div>
               </div>
@@ -106,11 +160,14 @@ export default function ChatRoom() {
             <div key={message.id} className="flex justify-end">
               <div>
                 <div className="bg-pink-300 text-white rounded-2xl px-4 py-3 shadow inline-block max-w-xs">
-                  {message.text}
+                  {message.content}
                 </div>
 
                 <div className="text-xs text-right text-gray-500 mt-1">
-                  {message.time}
+                  {new Date(message.created_at).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import ChatRoom from "./components/ChatRoom";
 export default function ChatPage() {
   const params = useParams();
   const caseId = params.caseId as string;
+
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
@@ -18,5 +19,5 @@ export default function ChatPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  return <>{showIntro ? <Intro /> : <ChatRoom />}</>;
+  return <>{showIntro ? <Intro /> : <ChatRoom caseId={caseId} />}</>;
 }
