@@ -21,6 +21,68 @@ export default function ChatRoom({ caseId }: Props) {
   const [input, setInput] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [role, setRole] = useState<"plaintiff" | "defendant">("defendant");
+  const [waitingCase, setWaitingCase] = useState<any>(null);
+
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const { data: authData, error: authErr } =
+          await supabase.auth.getUser();
+        if (authErr) {
+          console.error(authErr);
+          return;
+        }
+        const user = authData.user;
+        if (!user) return;
+
+        const { data: caseData, error } = await supabase
+          .from("cases")
+          .select("*")
+          .eq("id", caseId)
+          .single();
+
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        setRole(caseData?.created_by === user.id ? "plaintiff" : "defendant");
+
+        if (!caseData?.intro_started) {
+          await supabase
+            .from("cases")
+            .update({ intro_started: true })
+            .eq("id", caseId);
+
+          const judgeMessages = [
+            "안녕하세요.",
+            "저는 뿌엥 재판장입니다.",
+            "지금부터 재판을 시작하겠습니다.",
+            "원고부터 진술해주세요.",
+          ];
+
+          for (const message of judgeMessages) {
+            await supabase.from("statements").insert({
+              case_id: caseData.id,
+              user_id: user.id,
+              role: "judge",
+              content: message,
+            });
+
+            await sleep(5000); // 1.2초 대기
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUserRole();
+  }, [caseId]);
 
   console.log("caseId", caseId);
 
@@ -80,6 +142,12 @@ export default function ChatRoom({ caseId }: Props) {
   }, [messages]);
 
   const handleSend = async () => {
+    const { data: caseData } = await supabase
+      .from("cases")
+      .select("*")
+      .eq("id", caseId)
+      .single();
+
     console.log("Sending message:", input);
     if (!input.trim()) return;
 
@@ -92,7 +160,7 @@ export default function ChatRoom({ caseId }: Props) {
     const { error } = await supabase.from("statements").insert({
       case_id: caseId,
       user_id: user.id,
-      role: "plaintiff",
+      role: role,
       content: input,
     });
 

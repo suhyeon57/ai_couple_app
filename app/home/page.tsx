@@ -19,6 +19,9 @@ export default function HomePage() {
   const [incomingCase, setIncomingCase] = useState<any>(null);
   const [waitingCase, setWaitingCase] = useState<any>(null);
 
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -210,7 +213,6 @@ export default function HomePage() {
     setIncomingCase(null);
 
     router.push(`/chat/${incomingCase.id}`);
-    console.log(incomingCase.id);
   };
 
   useEffect(() => {
